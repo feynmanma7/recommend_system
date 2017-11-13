@@ -1,4 +1,2 @@
-Recommend System
-# Matrix factorization (SVD)
-# Factorization Machine 
-# Deep Learning
+# Recommend System
+# Collaborative Filtering
