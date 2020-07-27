@@ -33,17 +33,21 @@ def minHash(arr, hash_funcs, prime=23, dim=1000000):
 	return ' '.join(hash_codes)
 
 
-def main(input_path, prime=23, dim=1000000):
+def main(input_path, output_path, prime=23, dim=1000000):
 	hash_funcs = generate_hash_func()
 
+	fw = open(output_path, 'w')
 	for line in open(input_path, 'r'):
 		buf = line[:-1].split('\t')
 		item = buf[0]
 		vector = buf[1]
-		print(item + '\t' + minHash(vector.split(','), hash_funcs))
+		fw.write(item + '\t' + minHash(vector.split(','), hash_funcs) + '\n')
+
+	fw.close()
 
 
 if __name__ == '__main__':
 	input_path = '../data/item_vector.txt'
-	main(input_path)
+	output_path = '../data/item_min_hash.txt'
+	main(input_path, output_path)
 	
