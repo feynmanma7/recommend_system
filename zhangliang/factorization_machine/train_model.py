@@ -1,8 +1,8 @@
-from zhangliang.matrix_factorization.mf import MF
+from zhangliang.factorization_machine.fm import FM
 from zhangliang.utils.config import get_ml_train_path, get_ml_val_path, \
     get_ml_data_dir, get_log_dir, get_model_dir
 from zhangliang.utils.dictionary import load_dict
-from zhangliang.matrix_factorization.dataset import get_dataset
+from zhangliang.factorization_machine.dataset import get_dataset
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, ModelCheckpoint
 import time
@@ -16,12 +16,17 @@ def train_model():
     total_num_train = 599849 # num_lines of train_rating
     total_num_val = 200113 # num_lines of val_rating
 
-    train_path = get_ml_train_path()
-    val_path = get_ml_val_path() # val <== train, :(
+    input_len = 2 # [user_index, item_index]
+    input_dim = num_user + num_item
 
-    log_dir = os.path.join(get_log_dir(), "mf")
-    checkpoint_path = os.path.join(get_model_dir(), "mf", "ckpt")
-    history_path = os.path.join(get_log_dir(), "history", "mf.pkl")
+    train_path = get_ml_train_path()
+    val_path = get_ml_val_path()
+
+    model_name = "fm"
+
+    log_dir = os.path.join(get_log_dir(), model_name)
+    checkpoint_path = os.path.join(get_model_dir(), model_name, "ckpt")
+    history_path = os.path.join(get_log_dir(), "history", model_name + ".pkl")
 
     epochs = 100
     #epochs = 3
@@ -55,8 +60,9 @@ def train_model():
                               item_mapping_dict=item_mapping_dict)
 
     # === model
-    model = MF(num_user=num_user, num_item=num_item,
-               embedding_dim=embedding_dim)
+    model = FM(input_len=input_len,
+            input_dim=input_dim,
+            embedding_dim=embedding_dim)
 
     # optimizer
     optimizer = tf.keras.optimizers.Adam(0.001)

@@ -21,7 +21,8 @@ def compute_rmse(test_result_path=None):
 
 
 if __name__ == '__main__':
-    method = 'libfm'
+    # mf, libfm, fm, deep_fm
+    method = "fm"
     test_result_path = os.path.join(get_ml_data_dir(), method + "_test_result.txt")
 
     compute_rmse(test_result_path=test_result_path)

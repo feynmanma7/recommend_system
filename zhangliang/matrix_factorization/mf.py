@@ -29,7 +29,10 @@ class MF(tf.keras.Model):
         sim = tf.multiply(user_embedding, item_embedding)
 
         # [None, ]
-        sim = tf.reduce_mean(sim, [1])
+        #sim = tf.reduce_mean(sim, axis=[1]) # What's the difference ?!!
+        sim = tf.reduce_mean(sim, axis=-1)
+
+        #print('mf, sim', sim.shape)
         return sim
 
 

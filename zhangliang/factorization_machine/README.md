@@ -91,8 +91,18 @@ Test result,
 
 > $= (w_0 + \sum_{i=1} w_i x_i) + \frac{1}{2}\sum_{f=1}^k ((\sum_i v_{f, i})^2 - \sum_i v_{i, f}^2 x_i^2)$
 
-> $=Dense(X) +$
+### Train
 
+Epoch 3/100
+9373/9373 [==============================] - 157s 17ms/step - loss: 0.7210 - acc: 0.0556 - val_loss: 0.7772 - val_acc: 0.0571
+
+sqrt(0.7210) = 0.8491
+sqrt(0.7772) = 0.8816
+
+### Test
+
+
+## Evaluation
 
 # Field Factorization Machine
 
@@ -100,6 +110,9 @@ Test result,
 > $w_{i, j} = V_{i, f_j}^T V_{j, f_i}$
 
 # DeepFM
+
+
+
 
 # xDeepFM
 

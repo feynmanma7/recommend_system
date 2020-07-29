@@ -1,8 +1,8 @@
-from zhangliang.matrix_factorization.mf import MF
+from zhangliang.deep_fm.deep_fm import DeepFM
 from zhangliang.utils.config import get_ml_train_path, get_ml_val_path, \
     get_ml_data_dir, get_log_dir, get_model_dir
 from zhangliang.utils.dictionary import load_dict
-from zhangliang.matrix_factorization.dataset import get_dataset
+from zhangliang.deep_fm.dataset import get_dataset
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, ModelCheckpoint
 import time
@@ -16,12 +16,20 @@ def train_model():
     total_num_train = 599849 # num_lines of train_rating
     total_num_val = 200113 # num_lines of val_rating
 
-    train_path = get_ml_train_path()
-    val_path = get_ml_val_path() # val <== train, :(
+    dense_units = 32
+    dropout_keep_ratio = 0.5 # 0.8 -> 0.5
 
-    log_dir = os.path.join(get_log_dir(), "mf")
-    checkpoint_path = os.path.join(get_model_dir(), "mf", "ckpt")
-    history_path = os.path.join(get_log_dir(), "history", "mf.pkl")
+    input_len = 2 # [user_index, item_index]
+    input_dim = num_user + num_item
+
+    train_path = get_ml_train_path()
+    val_path = get_ml_val_path()
+
+    model_name = "deep_fm"
+
+    log_dir = os.path.join(get_log_dir(), model_name)
+    checkpoint_path = os.path.join(get_model_dir(), model_name, "ckpt")
+    history_path = os.path.join(get_log_dir(), "history", model_name + ".pkl")
 
     epochs = 100
     #epochs = 3
@@ -55,11 +63,14 @@ def train_model():
                               item_mapping_dict=item_mapping_dict)
 
     # === model
-    model = MF(num_user=num_user, num_item=num_item,
-               embedding_dim=embedding_dim)
+    model = DeepFM(input_len=input_len,
+            input_dim=input_dim,
+            embedding_dim=embedding_dim,
+            dense_units=dense_units,
+            dropout_keep_ratio=dropout_keep_ratio)
 
     # optimizer
-    optimizer = tf.keras.optimizers.Adam(0.001)
+    optimizer = tf.keras.optimizers.Adam(1e-3, decay=1e-4)
 
     # loss
     #loss = tf.keras.losses.SparseCategoricalCrossentropy()
