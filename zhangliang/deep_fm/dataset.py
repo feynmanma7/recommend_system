@@ -53,8 +53,15 @@ def dataset_generator(data_path=None,
                                                  tf.float32
                                              ))
 
+    """
     return dataset.repeat(epochs)\
         .shuffle(buffer_size=shuffle_buffer_size)\
+        .batch(batch_size=batch_size)
+    """
+
+    # === Shuffle first, then repeat, the whole dataset can be saw in one epoch
+    return dataset.shuffle(buffer_size=shuffle_buffer_size) \
+        .repeat(epochs) \
         .batch(batch_size=batch_size)
 
 

@@ -1,4 +1,4 @@
-from zhangliang.factorization_machine.fm import FM, test_model_once
+from zhangliang.deep_fm.deep_fm import DeepFM, test_model_once
 from zhangliang.utils.config import get_ml_test_path, \
     get_ml_data_dir, get_log_dir, get_model_dir
 from zhangliang.utils.dictionary import load_dict
@@ -66,6 +66,9 @@ if __name__ == '__main__':
     num_item = 3643
     embedding_dim = 32
 
+    dense_units = 32
+    dropout_keep_ratio = 0.5
+
     input_len = 2  # [user_index, item_index]
     input_dim = num_user + num_item
 
@@ -77,7 +80,13 @@ if __name__ == '__main__':
     item_mapping_dict = load_dict(item_mapping_dict_path)
 
     # === Build and compile model.
-    model = FM(input_len=input_len, input_dim=input_dim, embedding_dim=embedding_dim)
+    model = DeepFM(input_len=input_len,
+                   input_dim=input_dim,
+                   embedding_dim=embedding_dim,
+                   dense_units=dense_units,
+                   dropout_keep_ratio=dropout_keep_ratio)
+
+    #model = DeepFM(input_len=input_len, input_dim=input_dim, embedding_dim=embedding_dim)
     optimizer = tf.keras.optimizers.Adam(0.001)
     #loss = tf.keras.losses.SparseCategoricalCrossentropy()
     loss = tf.keras.losses.MSE

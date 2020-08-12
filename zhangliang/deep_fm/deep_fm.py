@@ -1,6 +1,6 @@
 import tensorflow as tf
 tf.random.set_seed(7)
-from tensorflow.keras.layers import Dense, Embedding, Dropout, Flatten
+from tensorflow.keras.layers import Dense, Embedding, BatchNormalization, Flatten
 
 
 class DeepFM(tf.keras.Model):
@@ -19,29 +19,41 @@ class DeepFM(tf.keras.Model):
         # === y_fm
         # one-order weights, bias_weight_index = input_dim
         self.one_order_embedding_layer = Embedding(input_dim=input_dim+1, output_dim=1)
+        self.bn_layer_1 = BatchNormalization()
 
         # two-orders weights
         self.two_order_embedding_layer = Embedding(input_dim=input_dim, output_dim=embedding_dim)
+        self.bn_layer_2 = BatchNormalization()
 
         # === y_dnn
-        self.dropout1_layer = Dropout(rate=1 - dropout_keep_ratio)
-        self.dense_layer = Dense(units=dense_units, activation='relu',
-                                 kernel_regularizer=tf.keras.regularizers.l2(0.0001))
-        self.dropout2_layer = Dropout(rate=1 - dropout_keep_ratio)
+        self.dense1_layer = Dense(units=dense_units, activation='sigmoid')
+        #self.dropout1_layer = Dropout(rate=1 - dropout_keep_ratio)
+        self.dense2_layer = Dense(units=dense_units, activation='sigmoid')
+        #self.dropout2_layer = Dropout(rate=1 - dropout_keep_ratio)
         self.flatten_layer = Flatten()
-        self.dnn_output_layer = Dense(units=1, activation='relu')
+        #self.dnn_output_layer = Dense(units=1, activation='sigmoid') # relu -> sigmoid
+        self.dnn_output_layer = Dense(units=1, activation='sigmoid')
 
         # === merge
-        self.output_layer = Dense(units=1) # for regression question, activation=linear
+        #self.output_layer = Dense(units=1) # for regression question, activation=linear
+
+        self.bn_layer_3 = BatchNormalization()
+        self.bn_layer_4 = BatchNormalization()
 
     def _compute_fm_1d(self,
                        bias_indexes=None,
-                       one_order_embedding=None,
+                       input_indexes=None,
                        input_values=None):
         # bias_indexes: [None, 1]
-        # one_order_embedding: [None, input_len, 1]
         # input_values: [None, input_len]
+        # input_indexes: [None, input_len]
         # Return: [None, 1]
+
+        # === Embedding
+        # [None, input_len, 1] <= [None, input_len]
+        one_order_embedding = self.one_order_embedding_layer(input_indexes)
+
+        one_order_embedding = self.bn_layer_1(one_order_embedding)
 
         # === bias, [None, 1, 1] <= [None, 1]
         bias = self.one_order_embedding_layer(bias_indexes)
@@ -62,11 +74,17 @@ class DeepFM(tf.keras.Model):
 
         return fm_1d
 
-    def _compute_fm_2d(self, two_order_embedding=None,
+    def _compute_fm_2d(self,
+                       input_indexes=None,
                        input_values=None):
-        # two_order_embedding: [None, input_len, embedding_dim]
+        # input_indexes: [None, input_len]
         # input_values: [None, input_len]
         # Return: [None, 1]
+
+        # [None, input_len, embedding_dim]
+        two_order_embedding = self.two_order_embedding_layer(input_indexes)
+
+        two_order_embedding = self.bn_layer_2(two_order_embedding)
 
         # embedding_value = embedding * value, V_{f, i} * x_i
         #   [None, input_len, embedding_dim], use broadcast of tf.
@@ -85,22 +103,29 @@ class DeepFM(tf.keras.Model):
         # [None, 1]
         fm_2d = 0.5 * tf.reduce_sum(square_of_sum - sum_of_square, axis=-1, keepdims=True)
 
-        return fm_2d
+        return fm_2d, embedding_value
 
-    def _compute_dnn(self, two_order_embedding=None):
-        # two_order_embedding: [None, input_len, embedding_dim]
+    def _compute_dnn(self, embedding_value=None):
+        # embedding_value: [None, input_len, embedding_dim]
         # Return: [None, 1]
 
-        # [None, input_len, embedding_dim]
-        outputs = self.dropout1_layer(two_order_embedding)
+        # [None, input_len, dense_units]
+        outputs = self.dense1_layer(embedding_value)
 
-        # [None, input_len, embedding_dim]
-        outputs = self.dense_layer(outputs)
+        outputs = self.bn_layer_3(outputs)
 
-        # [None, input_len, embedding_dim]
-        outputs = self.dropout2_layer(outputs)
+        # [None, input_len, dense_units]
+        #outputs = self.dropout1_layer(outputs)
 
-        # [None, input_len * embedding_dim]
+        # [None, input_len, dense_units]
+        outputs = self.dense2_layer(outputs)
+
+        outputs = self.bn_layer_4(outputs)
+
+        # [None, input_len, dense_units]
+        #outputs = self.dropout2_layer(outputs)
+
+        # [None, input_len * dense_units]
         outputs = self.flatten_layer(outputs)
 
         # [None, 1]
@@ -114,30 +139,24 @@ class DeepFM(tf.keras.Model):
         # input_values: [None, seq_len]
         input_values, input_indexes, bias_indexes = inputs
 
-        # === Embedding
-        # [None, input_len, 1] <= [None, input_len]
-        one_order_embedding = self.one_order_embedding_layer(input_indexes)
-
-        # [None, input_len, embedding_dim]
-        two_order_embedding = self.two_order_embedding_layer(input_indexes)
-
         # === fm_one_order, [None, 1]
         y_fm_1d = self._compute_fm_1d(bias_indexes=bias_indexes,
-                                    one_order_embedding=one_order_embedding,
+                                    input_indexes=input_indexes,
                                     input_values=input_values)
 
         # === fm_two_order, [None, 1]
-        y_fm_2d = self._compute_fm_2d(two_order_embedding=two_order_embedding,
+        y_fm_2d, embedding_value = self._compute_fm_2d(input_indexes=input_indexes,
                                     input_values=input_values)
 
         # === dnn, [None, 1]
-        y_dnn = self._compute_dnn(two_order_embedding=two_order_embedding)
+        y_dnn = self._compute_dnn(embedding_value=embedding_value)
 
         # [None, 3]
-        concat = tf.concat([y_fm_1d, y_fm_2d, y_dnn], axis=-1)
+        #concat = tf.concat([y_fm_1d, y_fm_2d, y_dnn], axis=-1)
 
         # [None, 1]
-        y_pred = self.output_layer(concat)
+        #y_pred = self.output_layer(concat)
+        y_pred = y_fm_1d + y_fm_2d + y_dnn
 
         return y_pred
 

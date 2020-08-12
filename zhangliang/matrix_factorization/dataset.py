@@ -42,9 +42,15 @@ def dataset_generator(data_path=None,
                                                  tf.float32
                                              ))
 
+    """
     return dataset.repeat(epochs)\
         .shuffle(buffer_size=shuffle_buffer_size)\
         .batch(batch_size=batch_size)
+    """
+
+    # `repeat` means ONE Epoch, should be placed in the last.
+    return dataset.shuffle(buffer_size=shuffle_buffer_size) \
+        .batch(batch_size=batch_size).repeat(epochs)
 
 
 def get_dataset(data_path=None,

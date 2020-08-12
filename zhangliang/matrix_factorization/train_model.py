@@ -27,7 +27,7 @@ def train_model():
     #epochs = 3
     shuffle_buffer_size = 1024 * 2
     batch_size = 64
-    patience = 10 # for early stopping
+    patience = 5 # for early stopping
 
     # === Load user, item mapping dict.
     user_mapping_dict_path = os.path.join(get_ml_data_dir(), "user_mapping_dict.pkl")

@@ -17,7 +17,7 @@ def train_model():
     total_num_val = 200113 # num_lines of val_rating
 
     dense_units = 32
-    dropout_keep_ratio = 0.5 # 0.8 -> 0.5
+    dropout_keep_ratio = 0.5
 
     input_len = 2 # [user_index, item_index]
     input_dim = num_user + num_item
@@ -33,9 +33,9 @@ def train_model():
 
     epochs = 100
     #epochs = 3
-    shuffle_buffer_size = 1024 * 2
-    batch_size = 64
-    patience = 10 # for early stopping
+    shuffle_buffer_size = 1024 * 8
+    batch_size = 64 # 1024 --> 64
+    patience = 5 # for early stopping
 
     # === Load user, item mapping dict.
     user_mapping_dict_path = os.path.join(get_ml_data_dir(), "user_mapping_dict.pkl")
@@ -46,6 +46,8 @@ def train_model():
 
     num_train_batch = total_num_train // batch_size + 1
     num_val_batch = total_num_val // batch_size + 1
+
+    #print('num_train_batch = %d, num_val_batch = %d' % (num_train_batch, num_val_batch))
 
     # === tf.data.Dataset
     train_dataset = get_dataset(data_path=train_path,
@@ -70,7 +72,8 @@ def train_model():
             dropout_keep_ratio=dropout_keep_ratio)
 
     # optimizer
-    optimizer = tf.keras.optimizers.Adam(1e-3, decay=1e-4)
+    #optimizer = tf.keras.optimizers.Adam(1e-3, decay=1e-4)
+    optimizer = tf.keras.optimizers.Adam(1e-3)
 
     # loss
     #loss = tf.keras.losses.SparseCategoricalCrossentropy()
