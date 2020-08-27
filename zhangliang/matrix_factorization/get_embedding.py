@@ -8,20 +8,52 @@ import os, time
 import numpy as np
 np.random.seed(7)
 
+"""
+Note: numpy==1.19.1, while to run faiss, numpy==1.15.0 
+"""
 
 def get_user_embedding(model=None, user_embedding_path=None, user_mapping_dict=None):
 	batch_size = 64
 	users = []
 	fw = open(user_embedding_path, 'w')
 	for user, user_id in user_mapping_dict.items():
-		user.append(user_id)
+		users.append(user_id)
 
 		if len(users) == batch_size:
 			user_embedding = model.get_user_embedding(np.array(users))
 			for user_id, embedding in zip(users, user_embedding):
-				fw.write(str(user_id) + '' + ,'.join(list(map(lambda x: str(x), embedding))))
+				fw.write(str(user_id) + '\t' +
+						 ','.join(list(map(lambda x: str(x), embedding.numpy()))) + '\n')
+			users = []
+
+	if len(users) > 0:
+		user_embedding = model.get_user_embedding(np.array(users))
+		for user_id, embedding in zip(users, user_embedding):
+			fw.write(str(user_id) + '\t' +
+					 ','.join(list(map(lambda x: str(x), embedding.numpy()))) + '\n')
+	fw.close()
 
 
+def get_item_embedding(model=None, item_embedding_path=None, item_mapping_dict=None):
+	batch_size = 64
+	items = []
+	fw = open(item_embedding_path, 'w')
+	for item, item_id in item_mapping_dict.items():
+		items.append(item_id)
+
+		if len(items) == batch_size:
+			item_embedding = model.get_item_embedding(np.array(items))
+			for item_id, embedding in zip(items, item_embedding):
+				fw.write(str(item_id) + '\t' +
+						 ','.join(list(map(lambda x: str(x), embedding.numpy()))) + '\n')
+			items = []
+
+	if len(items) > 0:
+		item_embedding = model.get_item_embedding(np.array(items))
+		for item_id, embedding in zip(items, item_embedding):
+			fw.write(str(item_id) + '\t' +
+					 ','.join(list(map(lambda x: str(x), embedding.numpy()))) + '\n')
+	fw.close()
 
 
 if __name__ == '__main__':
@@ -59,19 +91,22 @@ if __name__ == '__main__':
 	test_model_once(model=model, num_user=num_user, num_item=num_item)
 	print(model.summary())
 
+	"""
 	user_embedding = model.get_user_embedding(np.array([1, 2, 3])).numpy()
 	for embedding in user_embedding:
 		print(','.join(list(map(lambda x: str(x), embedding))))
+	"""
 
 	# === Get user embedding
-	"""
 	get_user_embedding(model=model, user_mapping_dict=user_mapping_dict,
 					   user_embedding_path=user_embedding_path)
 	print("Get user embedding done! %s" % user_embedding_path)
-	"""
 
 
 	# === Get item embedding
+	get_item_embedding(model=model, item_mapping_dict=item_mapping_dict,
+					   item_embedding_path=item_embedding_path)
+	print("Get item embedding done! %s" % item_embedding_path)
 
 
 
