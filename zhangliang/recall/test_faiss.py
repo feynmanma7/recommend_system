@@ -46,10 +46,15 @@ def build_faiss_index(embedding_path=None,
 					  embedding_dim=32,
 					  faiss_index_key="IDMap,Flat"):
 	# embedding_data: id \t embedding_str
-	batch_size = 64
+	batch_size = 256
 	ids, embeddings = [], []
 
-	index = faiss.index_factory(embedding_dim, faiss_index_key)
+	#index = faiss.index_factory(embedding_dim, "IDMap,Flat")
+	quantizer = faiss.IndexFlatL2(embedding_dim)
+	nlist = 50
+	code_size = 8
+	index = faiss.IndexIVFFlat(quantizer, embedding_dim, nlist)
+	index.nprobe = 5
 
 	with open(embedding_path, 'r', encoding='utf-8') as fr:
 		for line in fr:
@@ -66,7 +71,11 @@ def build_faiss_index(embedding_path=None,
 			if len(ids) % batch_size == 0:
 				embeddings = np.array(embeddings, dtype=np.float32)
 				ids = np.array(ids, dtype=np.int)
-				index.add_with_ids(embeddings, ids)
+
+				if not index.is_trained:
+					index.train(embeddings)
+				else:
+					index.add_with_ids(embeddings, ids)
 				ids, embeddings = [], []
 
 	if len(ids) > 0:
@@ -208,10 +217,11 @@ if __name__ == "__main__":
 	recall_at_k = 500
 
 	# === Build faiss index of item_embedding
+	faiss_index_key = "IVFx,Flat"
 	build_faiss_index(embedding_path=item_embedding_path,
 					  faiss_index_path=item_faiss_path,
 					  embedding_dim=32,
-					  faiss_index_key="IDMap,Flat")
+					  faiss_index_key=faiss_index_key)
 	print("Build faiss_index done!", item_faiss_path)
 
 

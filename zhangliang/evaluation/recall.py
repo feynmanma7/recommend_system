@@ -49,6 +49,7 @@ def recall_on_file(recall_path=None, k=1):
 
 if __name__ == '__main__':
 	recall_path = os.path.join(get_ml_data_dir(), "mf_faiss_recall.text")
+	#recall_path = os.path.join(get_ml_data_dir(), "mf_annoy_recall.text")
 	k = 500
 	recall_on_file(recall_path=recall_path, k=k)
 
