@@ -5,14 +5,12 @@ from tensorflow.keras.layers import Dense, Embedding, BatchNormalization, Flatte
 
 class DeepFM(tf.keras.Model):
     def __init__(self,
-                 input_len=2,
                  input_dim=10,
                  embedding_dim=8,
                  dense_units=8,
                  dropout_keep_ratio=0.8):
         super(DeepFM, self).__init__()
 
-        self.input_len = input_len
         self.input_dim = input_dim
         self.embedding_dim = embedding_dim
 
@@ -36,7 +34,7 @@ class DeepFM(tf.keras.Model):
         self.dnn_output_layer = Dense(units=1, activation='sigmoid')
 
         # === merge
-        #self.output_layer = Dense(units=1) # for regression question, activation=linear
+        self.output_layer = Dense(units=1) # for regression question, activation=linear
 
         self.bn_layer_3 = BatchNormalization()
         self.bn_layer_4 = BatchNormalization()
@@ -110,6 +108,38 @@ class DeepFM(tf.keras.Model):
         # embedding_value: [None, input_len, embedding_dim]
         # Return: [None, 1]
 
+        # === Add ResNet
+        # [None, input_len * embedding_dim]
+        inputs = self.flatten_layer(embedding_value)
+
+        outputs = self.dense1_layer(inputs)
+        dense1_outputs = self.bn_layer_3(outputs)
+
+        outputs = self.dense2_layer(dense1_outputs)
+        outputs = self.bn_layer_4(outputs)
+        dense2_outputs = outputs + dense1_outputs # x = F(x) + x
+
+        # [None, 1]
+        y_dnn = self.dnn_output_layer(dense2_outputs)
+
+        """
+        # === Flat first, then Dense
+        # [None, input_len * embedding_dim]
+        outputs = self.flatten_layer(embedding_value)
+
+        outputs = self.dense1_layer(outputs)
+        outputs = self.bn_layer_3(outputs)
+
+        outputs = self.dense2_layer(outputs)
+        outputs = self.bn_layer_4(outputs)
+
+        # [None, 1]
+        y_dnn = self.dnn_output_layer(outputs)
+        """
+
+        """
+        # === Dense first, then Flat 
+         
         # [None, input_len, dense_units]
         outputs = self.dense1_layer(embedding_value)
 
@@ -131,6 +161,7 @@ class DeepFM(tf.keras.Model):
 
         # [None, 1]
         y_dnn = self.dnn_output_layer(outputs)
+        """
 
         return y_dnn
 
@@ -153,11 +184,11 @@ class DeepFM(tf.keras.Model):
         y_dnn = self._compute_dnn(embedding_value=embedding_value)
 
         # [None, 3]
-        #concat = tf.concat([y_fm_1d, y_fm_2d, y_dnn], axis=-1)
+        concat = tf.concat([y_fm_1d, y_fm_2d, y_dnn], axis=-1)
 
         # [None, 1]
-        #y_pred = self.output_layer(concat)
-        y_pred = y_fm_1d + y_fm_2d + y_dnn
+        y_pred = self.output_layer(concat)
+        #y_pred = y_fm_1d + y_fm_2d + y_dnn
 
         return y_pred
 

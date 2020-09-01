@@ -16,3 +16,4 @@ RMSE (Root-Mean-Squared-Error)
 |FM|0.7995|0.8816|0.8805|[user,item]|
 |DeepFM|0.8450|0.8964|0.8953|epoch=3|
 
+

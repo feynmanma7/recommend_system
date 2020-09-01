@@ -10,16 +10,14 @@ import os
 
 
 def train_model():
-    embedding_dim = 32
+    embedding_dim = 8
+    dense_units = 32
+
     total_num_train = 600209 # num_lines of train.dat
     total_num_val = 200000 # num_lines of val.dat
 
     total_index = 13186
-
-    dense_units = 32
     dropout_keep_ratio = 0.5
-
-    input_len = 5 # remove user_index
 
     train_path = os.path.join(get_ml_data_dir(), "train.dat")
     val_path = os.path.join(get_ml_data_dir(), "val.dat")
@@ -54,7 +52,7 @@ def train_model():
                               total_index=total_index)
 
     # === model
-    model = DeepFM(input_len=input_len,
+    model = DeepFM(
             input_dim=total_index,
             embedding_dim=embedding_dim,
             dense_units=dense_units,

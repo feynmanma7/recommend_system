@@ -19,10 +19,19 @@ def test_model(model=None,
         with open(result_path, 'w', encoding='utf-8') as fw:
 
             line_cnt = 0
+
+            batch_size = 128
+            input_indexes = []
+            true_ratings = []
+
             for line in fr:
                 buf = line[:-1].split(',')
                 if len(buf) != 8:
                     continue
+
+                line_cnt += 1
+                if line_cnt % 1000 == 0:
+                    print(line_cnt)
 
                 user_index = int(buf[0])
                 movie_index = int(buf[1])
@@ -32,24 +41,45 @@ def test_model(model=None,
                 zip_code_index = int(buf[5])
                 true_rating = float(buf[6])
 
+                true_ratings.append(true_rating)
+
+                input_indexes.append([user_index, movie_index, gender_index,
+                                           age_period_index, occupation_index, zip_code_index])
+
+                """
                 input_values = np.array([[1, 1, 1, 1, 1, 1]], dtype=np.float32)
                 input_indexes = np.array([[user_index, movie_index, gender_index,
                                            age_period_index, occupation_index, zip_code_index]],
                                          dtype=np.int32)
                 bias_indexes = np.array([[total_index]], dtype=np.int32)
+                """
+
+                if line_cnt % batch_size == 0:
+                    # [batch_size, 6]
+                    input_values = np.array([[1] * 6 for _ in range(batch_size)], dtype=np.float32)
+                    input_indexes = np.array(input_indexes, dtype=np.int32)
+                    bias_indexes = np.array([[total_index] for _ in range(batch_size)], dtype=np.int32)
+
+                    inputs = (input_values, input_indexes, bias_indexes)
+
+                    # [batch_size, 1]
+                    pred_ratings = model(inputs)
+                    for true_rating, pred_rating in zip(true_ratings, pred_ratings.numpy()):
+                        fw.write(str(true_rating) + '\t' + str(pred_rating[0]) + '\n')
+
+                    true_ratings = []
+                    input_indexes = []
+
+            if len(true_ratings) > 0:
+                input_values = np.array([[1] * 6 for _ in range(len(input_indexes))], dtype=np.float32)
+                bias_indexes = np.array([[total_index] for _ in range(len(input_indexes))], dtype=np.int32)
+                input_indexes = np.array(input_indexes, dtype=np.int32)
 
                 inputs = (input_values, input_indexes, bias_indexes)
+                pred_ratings = model(inputs)
+                for true_rating, pred_rating in zip(true_ratings, pred_ratings.numpy()[0]):
+                    fw.write(str(true_rating) + '\t' + str(pred_rating) + '\n')
 
-                pred_rating = model(inputs)
-                pred_rating = pred_rating.numpy()[0][0]
-                #print(pred_rating)
-
-                #true_rating = buf[2]
-
-                fw.write(str(true_rating) + '\t' + str(pred_rating) + '\n')
-                line_cnt += 1
-                if line_cnt % 1000 == 0:
-                    print(line_cnt)
             print("Total line %d" % line_cnt)
 
 
@@ -60,7 +90,7 @@ if __name__ == '__main__':
     test_path = os.path.join(get_ml_data_dir(), "test.dat")
     test_result_path = os.path.join(get_ml_data_dir(), method + "_test_result.txt")
 
-    embedding_dim = 32
+    embedding_dim = 8
     dense_units = 32
     dropout_keep_ratio = 0.5
 
@@ -68,8 +98,7 @@ if __name__ == '__main__':
     input_dim = 13186
 
     # === Build and compile model.
-    model = DeepFM(input_len=input_len,
-                   input_dim=input_dim,
+    model = DeepFM(input_dim=input_dim,
                    embedding_dim=embedding_dim,
                    dense_units=dense_units,
                    dropout_keep_ratio=dropout_keep_ratio)
