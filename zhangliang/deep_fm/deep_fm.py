@@ -17,7 +17,8 @@ class DeepFM(tf.keras.Model):
         self.embedding_dim = embedding_dim
 
         # === y_fm
-        # one-order weights, bias_weight_index = input_dim
+        # one-order weights, bias_weight_index = input_dim, add 1 for `bias`.
+        # bias_index = input_dim, bias is the last embedding.
         self.one_order_embedding_layer = Embedding(input_dim=input_dim+1, output_dim=1)
         self.bn_layer_1 = BatchNormalization()
 

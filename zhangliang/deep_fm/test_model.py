@@ -12,34 +12,31 @@ np.random.seed(7)
 def test_model(model=None,
                test_path=None,
                result_path=None,
-               user_mapping_dict=None,
-               item_mapping_dict=None):
-    # test_data: user :: item :: rating :: tm
+               total_index=11480):
     # result: true_rating \t pred_rating
-
-    num_user = len(user_mapping_dict)
-    num_item = len(item_mapping_dict)
-    bias_index = num_user + num_item
 
     with open(test_path, 'r', encoding='utf-8') as fr:
         with open(result_path, 'w', encoding='utf-8') as fw:
 
             line_cnt = 0
             for line in fr:
-                buf = line[:-1].split('::')
-                user = buf[0]
-                item = buf[1]
-
-                if user not in user_mapping_dict or item not in item_mapping_dict:
+                buf = line[:-1].split(',')
+                if len(buf) != 8:
                     continue
 
-                user_index = int(user_mapping_dict[buf[0]])
-                item_index = int(item_mapping_dict[buf[1]]) + num_user  # For FM
-                #rating = float(buf[2])
+                user_index = int(buf[0])
+                movie_index = int(buf[1])
+                gender_index = int(buf[2])
+                age_period_index = int(buf[3])
+                occupation_index = int(buf[4])
+                zip_code_index = int(buf[5])
+                true_rating = float(buf[6])
 
-                input_values = np.array([[1, 1]], dtype=np.float32)
-                input_indexes = np.array([[user_index, item_index]], dtype=np.int32)
-                bias_indexes = np.array([[bias_index]], dtype=np.int32)
+                input_values = np.array([[1, 1, 1, 1, 1, 1]], dtype=np.float32)
+                input_indexes = np.array([[user_index, movie_index, gender_index,
+                                           age_period_index, occupation_index, zip_code_index]],
+                                         dtype=np.int32)
+                bias_indexes = np.array([[total_index]], dtype=np.int32)
 
                 inputs = (input_values, input_indexes, bias_indexes)
 
@@ -47,7 +44,7 @@ def test_model(model=None,
                 pred_rating = pred_rating.numpy()[0][0]
                 #print(pred_rating)
 
-                true_rating = buf[2]
+                #true_rating = buf[2]
 
                 fw.write(str(true_rating) + '\t' + str(pred_rating) + '\n')
                 line_cnt += 1
@@ -59,25 +56,16 @@ def test_model(model=None,
 if __name__ == '__main__':
     method = "deep_fm"
     checkpoint_dir = os.path.join(get_model_dir(), method)
-    test_path = get_ml_test_path()
+    #test_path = get_ml_test_path()
+    test_path = os.path.join(get_ml_data_dir(), "test.dat")
     test_result_path = os.path.join(get_ml_data_dir(), method + "_test_result.txt")
 
-    num_user = 6040
-    num_item = 3643
     embedding_dim = 32
-
     dense_units = 32
     dropout_keep_ratio = 0.5
 
-    input_len = 2  # [user_index, item_index]
-    input_dim = num_user + num_item
-
-    # === Load user, item mapping dict.
-    user_mapping_dict_path = os.path.join(get_ml_data_dir(), "user_mapping_dict.pkl")
-    item_mapping_dict_path = os.path.join(get_ml_data_dir(), "item_mapping_dict.pkl")
-
-    user_mapping_dict = load_dict(user_mapping_dict_path)
-    item_mapping_dict = load_dict(item_mapping_dict_path)
+    input_len = 6
+    input_dim = 13186
 
     # === Build and compile model.
     model = DeepFM(input_len=input_len,
@@ -105,8 +93,8 @@ if __name__ == '__main__':
     # === Test
     start = time.time()
     test_model(model=model, test_path=test_path, result_path=test_result_path,
-               user_mapping_dict=user_mapping_dict,
-               item_mapping_dict=item_mapping_dict)
+               total_index=input_dim)
+
     end = time.time()
     last = end - start
     print("Write done! %s Lasts %.2fs" % (test_result_path, last))

@@ -12,6 +12,11 @@ Use ratings.dat, users.dat, movies.dat
 + movies: movie_str, title, genres
 
 # Output
+
+ratings order by timestamp
+
+====
+
 To produce  
 
 user_id, movie_id, rating, timestamp
@@ -48,21 +53,6 @@ def load_rating(spark_context=None, spark_session=None, data_path=None):
     df = spark_session.createDataFrame(data, schema)
     return df
 
-
-def load_user(spark_context=None, spark_session=None, data_path=None):
-    schema = StructType([
-        StructField("user", StringType(), True),
-        StructField("gender", StringType(), True),
-        StructField("age", StringType(), True),
-        StructField("occupation", StringType(), True),
-        StructField("zip_code", StringType(), True)
-    ])
-    data = spark_context.textFile(data_path).map(lambda x: x.split("::")).map(_to_int)
-
-#def load_item():
-
-
-
 if __name__ == '__main__':
     rating_path = os.path.join(get_ml_data_dir(), "ratings.dat")
     user_path = os.path.join(get_ml_data_dir(), "users.dat")
@@ -77,18 +67,8 @@ if __name__ == '__main__':
                             data_path=rating_path)
     print(rating_df.show(5))
 
-
-    print(rating_df.select("user").count())
-    print(rating_df.select("user").distinct().count())
-
-    """
-    user_df = load_user(spark_context=spark_context,
-                        spark_session=spark_session,
-                        data_path=user_path)
-    """
-
-    #df.coalesce(1).write.option("header", "false").csv(sorted_data_path)
-    #print("Write done!", sorted_data_path)
+    rating_df.coalesce(1).write.option("header", "false").csv(sorted_data_path)
+    print("Write done!", sorted_data_path)
 
 
 
