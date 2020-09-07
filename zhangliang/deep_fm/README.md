@@ -43,4 +43,5 @@ Epoch 14/100
 |DeepFM|0.8418|0.9143|0.9140|output(concat), dense=32,embedding=8,epoch=33|
 |DeepFM|0.8437|0.9132|0.9133|dnn(flat first, then dense),output(concat), dense=32,embedding=8,epoch=26|
 |DeepFM|0.8594|0.9158|0.9157|resnet, epoch=16|
+|DeepFM|0.8553|0.9071|0.9071|BN before activation, epoch=25|
 

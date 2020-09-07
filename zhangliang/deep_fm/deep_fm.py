@@ -1,6 +1,6 @@
 import tensorflow as tf
 tf.random.set_seed(7)
-from tensorflow.keras.layers import Dense, Embedding, BatchNormalization, Flatten
+from tensorflow.keras.layers import Dense, Embedding, BatchNormalization, Flatten, Activation
 
 
 class DeepFM(tf.keras.Model):
@@ -25,9 +25,10 @@ class DeepFM(tf.keras.Model):
         self.bn_layer_2 = BatchNormalization()
 
         # === y_dnn
-        self.dense1_layer = Dense(units=dense_units, activation='sigmoid')
+        #self.dense1_layer = Dense(units=dense_units, activation='sigmoid')
+        self.dense1_layer = Dense(units=dense_units)
         #self.dropout1_layer = Dropout(rate=1 - dropout_keep_ratio)
-        self.dense2_layer = Dense(units=dense_units, activation='sigmoid')
+        self.dense2_layer = Dense(units=dense_units)
         #self.dropout2_layer = Dropout(rate=1 - dropout_keep_ratio)
         self.flatten_layer = Flatten()
         #self.dnn_output_layer = Dense(units=1, activation='sigmoid') # relu -> sigmoid
@@ -38,6 +39,9 @@ class DeepFM(tf.keras.Model):
 
         self.bn_layer_3 = BatchNormalization()
         self.bn_layer_4 = BatchNormalization()
+        self.activation_layer_1 = Activation('sigmoid')
+        self.activation_layer_2 = Activation('sigmoid')
+
 
     def _compute_fm_1d(self,
                        bias_indexes=None,
@@ -112,11 +116,15 @@ class DeepFM(tf.keras.Model):
         # [None, input_len * embedding_dim]
         inputs = self.flatten_layer(embedding_value)
 
+        # dense -> bn -> activation
         outputs = self.dense1_layer(inputs)
         dense1_outputs = self.bn_layer_3(outputs)
+        dense1_outputs = self.activation_layer_1(dense1_outputs)
 
         outputs = self.dense2_layer(dense1_outputs)
         outputs = self.bn_layer_4(outputs)
+        outputs = self.activation_layer_2(outputs)
+
         dense2_outputs = outputs + dense1_outputs # x = F(x) + x
 
         # [None, 1]
